@@ -67,6 +67,7 @@ private:
     int handleChildrenOfHollowRoot(Node<T>* hollowRoot, vector<Node<T>*>& fullRoots, int maxRank);
     Node<T>* handleHollowChildOfHollowRoot(Node<T>* childOfHollowRoot,  Node<T>* hollowRoot);
     void doUnrankedLinks(int maxRank, vector<Node<T>*> &fullRoots);
+    void initFullRootsList(vector<Node<T>*>& fullRoots);
     int doRankedLinks(Node<T>* node, int maxRank, vector<Node<T>*>& fullRoots);
 };
 
@@ -155,10 +156,7 @@ void HollowHeap<T>::deleteItem(Item<T> *itemToDelete) {
 
     int maxRank = 0;
     vector<Node<T>*> fullRoots;
-    fullRoots.resize(log2(count) + 1);
-    for (int i = 0; i < fullRoots.size(); i++) {
-        fullRoots[i] = nullptr;
-    }
+    initFullRootsList(fullRoots);
 
     // iterate through all hollow roots and destroy them
     while (min != nullptr) { // while there are still hollow roots
@@ -174,6 +172,14 @@ void HollowHeap<T>::deleteItem(Item<T> *itemToDelete) {
     count--;
 }
 
+template <typename T>
+void HollowHeap<T>::initFullRootsList(vector<Node<T>*>& fullRoots) {
+    fullRoots.resize(log2(count) + 1);
+    for (int i = 0; i < fullRoots.size(); i++) {
+        fullRoots[i] = nullptr;
+    }
+}
+
 template <typename  T>
 int HollowHeap<T>::handleChildrenOfHollowRoot(
         Node<T>* hollowRoot,
@@ -183,7 +189,6 @@ int HollowHeap<T>::handleChildrenOfHollowRoot(
     Node<T>* nextChildOfHollowRoot = hollowRoot->child;
     while (nextChildOfHollowRoot != nullptr) {
         Node<T>* childOfHollowRoot = nextChildOfHollowRoot;
-        nextChildOfHollowRoot = nextChildOfHollowRoot->next;
 
         // if child of the hollow root is hollow too
         if (childOfHollowRoot->item == nullptr) {
@@ -191,11 +196,12 @@ int HollowHeap<T>::handleChildrenOfHollowRoot(
         } else {
             // if child is not hollow, it will become a root after destruction of its (hollow) parent
             // Hence, add it to the list of full roots
+            nextChildOfHollowRoot = childOfHollowRoot->next;
             maxRank = doRankedLinks(childOfHollowRoot, maxRank, fullRoots);
         }
     }
     return maxRank;
-} 
+}
 
 // returns next child of the hollow root to be processed
 template <typename  T>
@@ -206,16 +212,17 @@ Node<T>* HollowHeap<T>::handleHollowChildOfHollowRoot(Node<T>* childOfHollowRoot
         childOfHollowRoot->next = min;
         min = childOfHollowRoot;
     } else { // if hollowRoot has 2 parents
-        if (childOfHollowRoot->extraParent != hollowRoot) {
-            childOfHollowRoot->next = nullptr;
-        } else {
+        if (childOfHollowRoot->extraParent == hollowRoot) {
             nextChildOfHollowRoot = nullptr;
+        } else {
+            childOfHollowRoot->next = nullptr;
         }
         childOfHollowRoot->extraParent = nullptr;
     }
     return nextChildOfHollowRoot;
 }
 
+// returns maxRank found so far in fullRoots array
 template <typename T>
 int HollowHeap<T>::doRankedLinks(Node<T>* node, int maxRank, vector<Node<T>*> &fullRoots) {
     while (fullRoots[node->rank] != nullptr) {
