@@ -65,7 +65,7 @@ private:
     void addChild(Node<T>* futureChild, Node<T>* futureParent);
     Node<T>* merge(Node<T>* newNode);
     int handleChildrenOfHollowRoot(Node<T>* hollowRoot, vector<Node<T>*>& fullRoots, int maxRank);
-    Node<T>* handleHollowChildOfHollowRoot(Node<T>* childOfHollowRoot,  Node<T>* hollowRoot);
+    Node<T>* handleHollowChild(Node<T>* childOfHollowRoot,  Node<T>* hollowRoot);
     void doUnrankedLinks(int maxRank, vector<Node<T>*> &fullRoots);
     void initFullRootsList(vector<Node<T>*>& fullRoots);
     int doRankedLinks(Node<T>* node, int maxRank, vector<Node<T>*>& fullRoots);
@@ -163,7 +163,11 @@ void HollowHeap<T>::deleteItem(Item<T> *itemToDelete) {
         Node<T>* hollowRoot = min;
         min = min->next;
 
-        maxRank = handleChildrenOfHollowRoot(hollowRoot, fullRoots, maxRank);
+        maxRank = handleChildrenOfHollowRoot(
+                hollowRoot,
+                fullRoots,
+                maxRank
+        );
 
         delete hollowRoot;
     }
@@ -173,7 +177,9 @@ void HollowHeap<T>::deleteItem(Item<T> *itemToDelete) {
 }
 
 template <typename T>
-void HollowHeap<T>::initFullRootsList(vector<Node<T>*>& fullRoots) {
+void HollowHeap<T>::initFullRootsList(
+        vector<Node<T>*>& fullRoots
+) {
     fullRoots.resize(log2(count) + 1);
     for (int i = 0; i < fullRoots.size(); i++) {
         fullRoots[i] = nullptr;
@@ -192,12 +198,19 @@ int HollowHeap<T>::handleChildrenOfHollowRoot(
 
         // if child of the hollow root is hollow too
         if (childOfHollowRoot->item == nullptr) {
-            nextChildOfHollowRoot = handleHollowChildOfHollowRoot(childOfHollowRoot, hollowRoot);
+            nextChildOfHollowRoot = handleHollowChild(
+                    childOfHollowRoot,
+                    hollowRoot
+            );
         } else {
             // if child is not hollow, it will become a root after destruction of its (hollow) parent
             // Hence, add it to the list of full roots
             nextChildOfHollowRoot = childOfHollowRoot->next;
-            maxRank = doRankedLinks(childOfHollowRoot, maxRank, fullRoots);
+            maxRank = doRankedLinks(
+                    childOfHollowRoot,
+                    maxRank,
+                    fullRoots
+            );
         }
     }
     return maxRank;
@@ -205,7 +218,10 @@ int HollowHeap<T>::handleChildrenOfHollowRoot(
 
 // returns next child of the hollow root to be processed
 template <typename  T>
-Node<T>* HollowHeap<T>::handleHollowChildOfHollowRoot(Node<T>* childOfHollowRoot,  Node<T>* hollowRoot) {
+Node<T>* HollowHeap<T>::handleHollowChild(
+        Node<T>* childOfHollowRoot,
+        Node<T>* hollowRoot
+) {
     Node<T>* nextChildOfHollowRoot = childOfHollowRoot->next;
     // if the child has only 1 parent, deleting hollowRoot makes childOfHollowRoot a root
     if (childOfHollowRoot->extraParent == nullptr) {
@@ -224,7 +240,11 @@ Node<T>* HollowHeap<T>::handleHollowChildOfHollowRoot(Node<T>* childOfHollowRoot
 
 // returns maxRank found so far in fullRoots array
 template <typename T>
-int HollowHeap<T>::doRankedLinks(Node<T>* node, int maxRank, vector<Node<T>*> &fullRoots) {
+int HollowHeap<T>::doRankedLinks(
+        Node<T>* node,
+        int maxRank,
+        vector<Node<T>*> &fullRoots
+) {
     while (fullRoots[node->rank] != nullptr) {
         node = link(node, fullRoots[node->rank]);
         fullRoots[node->rank] = nullptr;
@@ -237,7 +257,10 @@ int HollowHeap<T>::doRankedLinks(Node<T>* node, int maxRank, vector<Node<T>*> &f
 }
 
 template <typename T>
-void HollowHeap<T>::doUnrankedLinks(int maxRank, vector<Node<T>*>& fullRoots) {
+void HollowHeap<T>::doUnrankedLinks(
+        int maxRank,
+        vector<Node<T>*>& fullRoots
+) {
     for (int i = 0; i <= maxRank; i++) {
         if (fullRoots[i] != nullptr) {
             if (min == nullptr) {
@@ -283,7 +306,10 @@ Node<T>* HollowHeap<T>::link(Node<T>* n1, Node<T>* n2) {
 }
 
 template <typename T>
-void HollowHeap<T>::addChild(Node<T>* futureChild, Node<T>* futureParent) {
+void HollowHeap<T>::addChild(
+        Node<T>* futureChild,
+        Node<T>* futureParent
+) {
     futureChild->next = futureParent->child;
     futureParent->child = futureChild;
     // a root does not have a parent and therefore no next link
