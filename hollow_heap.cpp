@@ -1,5 +1,6 @@
 #include <vector>
 #include <cmath>
+#include <memory>
 
 using namespace std;
 
@@ -13,7 +14,7 @@ template <typename T>
 struct Item {
 private:
     T value;
-    Node<T>* node;
+    weak_ptr<Node<T>> node;
 public:
     explicit Item(T val) {
         this->value = val;
@@ -27,18 +28,17 @@ public:
 };
 
 template <typename T>
-struct Node {
+struct Node: std::enable_shared_from_this<Node<T>> {
 private:
     T key;
-    Item<T> *item;
-    Node<T> *next = nullptr;
-    Node<T> *child = nullptr;
-    Node<T> *extraParent = nullptr;
+    shared_ptr<Item<T>> item;
+    shared_ptr<Node<T>> next;
+    shared_ptr<Node<T>> child;
+    weak_ptr<Node<T>> extraParent;
     int rank = 0;
 public:
-    explicit Node(Item<T> *initItem) {
+    explicit Node(shared_ptr<Item<T>> initItem) {
         this->item = initItem;
-        initItem->node = this;
         this->key = initItem->value;
     }
 
@@ -51,26 +51,45 @@ public:
     bool isEmpty();
     T getMin();
     int size();
-    Item<T>* insert(T el);
+    shared_ptr<Item<T>> insert(T el);
     void merge(HollowHeap<T> &hh);
     T extractMin();
-    void decreaseKey(Item<T>* itemToDecrease, T val);
-    void deleteItem(Item<T>* itemToDelete);
+    void decreaseKey(shared_ptr<Item<T>> &itemToDecrease, T val);
+    void deleteItem(shared_ptr<Item<T>> &itemToDelete);
 private:
     int count = 0;
-    Node<T>* min = nullptr;
+    shared_ptr<Node<T>> min;
 
-    Node<T>* makeNode(Item<T>* item);
-    Node<T>* link(Node<T>* n1, Node<T>* n2);
-    void addChild(Node<T>* futureChild, Node<T>* futureParent);
-    Node<T>* merge(Node<T>* newNode);
-    int handleChildrenOfHollowRoot(Node<T>* hollowRoot, vector<Node<T>*>& fullRoots, int maxRank);
-    Node<T>* handleHollowChild(Node<T>* childOfHollowRoot,  Node<T>* hollowRoot);
-    void doUnrankedLinks(int maxRank, vector<Node<T>*> &fullRoots);
-    void initFullRootsList(vector<Node<T>*>& fullRoots);
-    int doRankedLinks(Node<T>* node, int maxRank, vector<Node<T>*>& fullRoots);
+    shared_ptr<Node<T>> makeNode(shared_ptr<Item<T>> &item);
+    shared_ptr<Node<T>> link(shared_ptr<Node<T>> &n1, shared_ptr<Node<T>> &n2);
+    void addChild(
+            shared_ptr<Node<T>> &futureChild,
+            shared_ptr<Node<T>> &futureParent);
+
+    shared_ptr<Node<T>> merge(shared_ptr<Node<T>> &newNode);
+    int handleChildrenOfHollowRoot(
+            shared_ptr<Node<T>> &hollowRoot,
+            vector<shared_ptr<Node<T>>>& fullRoots,
+            int maxRank);
+
+    shared_ptr<Node<T>> handleHollowChild(
+            shared_ptr<Node<T>>& childOfHollowRoot,
+            shared_ptr<Node<T>> &hollowRoot);
+
+    void doUnrankedLinks(
+            int maxRank,
+            vector<shared_ptr<Node<T>>> &fullRoots);
+
+    void initFullRootsList(vector<shared_ptr<Node<T>>>& fullRoots);
+    int doRankedLinks(
+            shared_ptr<Node<T>> &node,
+            int maxRank,
+            vector<shared_ptr<Node<T>>> &fullRoots);
+    bool equals(
+            const weak_ptr<Node<T>>& weakPtr,
+            const shared_ptr<Node<T>>& sharedPtr
+    );
 };
-
 
 template <typename T>
 T HollowHeap<T>::getMin() {
@@ -93,11 +112,11 @@ bool HollowHeap<T>::isEmpty() {
 
 // returns inserted item
 template <typename T>
-Item<T>* HollowHeap<T>::insert(T el) {
-    Item<T>* item = new Item(el);
-    Node<T>* newNode = makeNode(item);
+shared_ptr<Item<T>> HollowHeap<T>::insert(T el) {
+    shared_ptr<Item<T>> item(new Item<T>(el));
+    shared_ptr<Node<T>> newNode = makeNode(item);
 
-    Node<T>* newMin = merge(newNode);
+    shared_ptr<Node<T>> newMin = merge(newNode);
     count++;
 
     min = newMin;
@@ -106,12 +125,9 @@ Item<T>* HollowHeap<T>::insert(T el) {
 
 template <typename T>
 void HollowHeap<T>::merge(HollowHeap<T> &hh) {
-    Node<T>* newMin = merge(hh.min);
+    shared_ptr<Node<T>> newMin = merge(hh.min);
     count = count + hh.count;
 
-    // set min pointer of hh to nullptr
-    // to avoid destruction of nodes that were just merged
-    hh.min = nullptr;
     min = newMin;
 }
 
@@ -123,8 +139,8 @@ T HollowHeap<T>::extractMin() {
 }
 
 template <typename T>
-void HollowHeap<T>::decreaseKey(Item<T> *itemToDecrease, T val) {
-    Node<T>* nodeToDecrease = itemToDecrease->node;
+void HollowHeap<T>::decreaseKey(shared_ptr<Item<T>> &itemToDecrease, T val) {
+    shared_ptr<Node<T>> nodeToDecrease = itemToDecrease->node.lock();
     itemToDecrease->value = val;
 
     if (nodeToDecrease == min) {
@@ -132,7 +148,7 @@ void HollowHeap<T>::decreaseKey(Item<T> *itemToDecrease, T val) {
         return;
     }
 
-    Node<T>* secondParent = makeNode(itemToDecrease);
+    shared_ptr<Node<T>> secondParent = makeNode(itemToDecrease);
     secondParent->child = nodeToDecrease;
     nodeToDecrease->item = nullptr;
     nodeToDecrease->extraParent = secondParent;
@@ -144,10 +160,11 @@ void HollowHeap<T>::decreaseKey(Item<T> *itemToDecrease, T val) {
 }
 
 template <typename T>
-void HollowHeap<T>::deleteItem(Item<T> *itemToDelete) {
-    Node<T>* nodeToDelete = itemToDelete->node;
+void HollowHeap<T>::deleteItem(shared_ptr<Item<T>> &itemToDelete) {
+    shared_ptr<Node<T>> nodeToDelete = itemToDelete->node.lock();
+    nodeToDelete->item->node.reset();
+    nodeToDelete->item.reset();
     nodeToDelete->item = nullptr;
-    itemToDelete->node = nullptr;
 
     if (min->item != nullptr) { // Non-minimum deletion
         count--;
@@ -155,12 +172,12 @@ void HollowHeap<T>::deleteItem(Item<T> *itemToDelete) {
     }
 
     int maxRank = 0;
-    vector<Node<T>*> fullRoots;
+    vector<shared_ptr<Node<T>>> fullRoots;
     initFullRootsList(fullRoots);
 
     // iterate through all hollow roots and destroy them
     while (min != nullptr) { // while there are still hollow roots
-        Node<T>* hollowRoot = min;
+        shared_ptr<Node<T>> hollowRoot = min;
         min = min->next;
 
         maxRank = handleChildrenOfHollowRoot(
@@ -169,7 +186,7 @@ void HollowHeap<T>::deleteItem(Item<T> *itemToDelete) {
                 maxRank
         );
 
-        delete hollowRoot;
+        hollowRoot.reset();
     }
 
     doUnrankedLinks(maxRank, fullRoots);
@@ -178,7 +195,7 @@ void HollowHeap<T>::deleteItem(Item<T> *itemToDelete) {
 
 template <typename T>
 void HollowHeap<T>::initFullRootsList(
-        vector<Node<T>*>& fullRoots
+        vector<shared_ptr<Node<T>>> &fullRoots
 ) {
     fullRoots.resize(log2(count) + 1);
     for (int i = 0; i < fullRoots.size(); i++) {
@@ -188,13 +205,13 @@ void HollowHeap<T>::initFullRootsList(
 
 template <typename  T>
 int HollowHeap<T>::handleChildrenOfHollowRoot(
-        Node<T>* hollowRoot,
-        vector<Node<T>*>& fullRoots,
+        shared_ptr<Node<T>> &hollowRoot,
+        vector<shared_ptr<Node<T>>> &fullRoots,
         int maxRank
 ) {
-    Node<T>* nextChildOfHollowRoot = hollowRoot->child;
+    shared_ptr<Node<T>> nextChildOfHollowRoot = hollowRoot->child;
     while (nextChildOfHollowRoot != nullptr) {
-        Node<T>* childOfHollowRoot = nextChildOfHollowRoot;
+        shared_ptr<Node<T>> childOfHollowRoot = nextChildOfHollowRoot;
 
         // if child of the hollow root is hollow too
         if (childOfHollowRoot->item == nullptr) {
@@ -218,22 +235,22 @@ int HollowHeap<T>::handleChildrenOfHollowRoot(
 
 // returns next child of the hollow root to be processed
 template <typename  T>
-Node<T>* HollowHeap<T>::handleHollowChild(
-        Node<T>* childOfHollowRoot,
-        Node<T>* hollowRoot
+shared_ptr<Node<T>> HollowHeap<T>::handleHollowChild(
+        shared_ptr<Node<T>> &childOfHollowRoot,
+        shared_ptr<Node<T>> &hollowRoot
 ) {
-    Node<T>* nextChildOfHollowRoot = childOfHollowRoot->next;
+    shared_ptr<Node<T>> nextChildOfHollowRoot = childOfHollowRoot->next;
     // if the child has only 1 parent, deleting hollowRoot makes childOfHollowRoot a root
-    if (childOfHollowRoot->extraParent == nullptr) {
+    if (!childOfHollowRoot->extraParent.lock()) {
         childOfHollowRoot->next = min;
         min = childOfHollowRoot;
     } else { // if hollowRoot has 2 parents
-        if (childOfHollowRoot->extraParent == hollowRoot) {
+        if (equals(childOfHollowRoot->extraParent, hollowRoot)) {
             nextChildOfHollowRoot = nullptr;
         } else {
             childOfHollowRoot->next = nullptr;
         }
-        childOfHollowRoot->extraParent = nullptr;
+        childOfHollowRoot->extraParent.reset();
     }
     return nextChildOfHollowRoot;
 }
@@ -241,9 +258,9 @@ Node<T>* HollowHeap<T>::handleHollowChild(
 // returns maxRank found so far in fullRoots array
 template <typename T>
 int HollowHeap<T>::doRankedLinks(
-        Node<T>* node,
+        shared_ptr<Node<T>> &node,
         int maxRank,
-        vector<Node<T>*> &fullRoots
+        vector<shared_ptr<Node<T>>> &fullRoots
 ) {
     while (fullRoots[node->rank] != nullptr) {
         node = link(node, fullRoots[node->rank]);
@@ -259,7 +276,7 @@ int HollowHeap<T>::doRankedLinks(
 template <typename T>
 void HollowHeap<T>::doUnrankedLinks(
         int maxRank,
-        vector<Node<T>*>& fullRoots
+        vector<shared_ptr<Node<T>>> &fullRoots
 ) {
     for (int i = 0; i <= maxRank; i++) {
         if (fullRoots[i] != nullptr) {
@@ -275,7 +292,7 @@ void HollowHeap<T>::doUnrankedLinks(
 }
 
 template <typename T>
-Node<T>* HollowHeap<T>::merge(Node<T>* newNode) {
+shared_ptr<Node<T>> HollowHeap<T>::merge(shared_ptr<Node<T>> &newNode) {
     if (min == nullptr) {
         min = newNode;
         return min;
@@ -289,13 +306,17 @@ Node<T>* HollowHeap<T>::merge(Node<T>* newNode) {
 }
 
 template <typename T>
-Node<T>* HollowHeap<T>::makeNode(Item<T>* item) {
-    auto* node = new Node<T>(item);
-    return node;
+shared_ptr<Node<T>> HollowHeap<T>::makeNode(shared_ptr<Item<T>> &item) {
+    shared_ptr<Node<T>> myNode(new Node(item));
+    item->node = myNode->shared_from_this();
+    return myNode;
 }
 
 template <typename T>
-Node<T>* HollowHeap<T>::link(Node<T>* n1, Node<T>* n2) {
+shared_ptr<Node<T>> HollowHeap<T>::link(
+        shared_ptr<Node<T>> &n1,
+        shared_ptr<Node<T>> &n2
+) {
     if (n1->key >= n2->key) {
         addChild(n1, n2);
         return n2;
@@ -307,11 +328,19 @@ Node<T>* HollowHeap<T>::link(Node<T>* n1, Node<T>* n2) {
 
 template <typename T>
 void HollowHeap<T>::addChild(
-        Node<T>* futureChild,
-        Node<T>* futureParent
+        shared_ptr<Node<T>> &futureChild,
+        shared_ptr<Node<T>> &futureParent
 ) {
     futureChild->next = futureParent->child;
     futureParent->child = futureChild;
     // a root does not have a parent and therefore no next link
     futureParent->next = nullptr;
+}
+
+template <typename T>
+bool HollowHeap<T>::equals(
+        const weak_ptr<Node<T>>& weakPtr,
+        const shared_ptr<Node<T>>& sharedPtr
+) {
+    return !weakPtr.expired() && weakPtr.lock() == sharedPtr;
 }

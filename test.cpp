@@ -149,7 +149,7 @@ void decreaseKeyWhenAllNodesAreRoots() {
     HollowHeap<int> f1;
     f1.insert(1);
     f1.insert(2);
-    Item<int>* n = f1.insert(3);
+    shared_ptr<Item<int>> n = f1.insert(3);
     f1.insert(4);
     f1.insert(5);
     f1.decreaseKey(n, 0);
@@ -161,9 +161,9 @@ void decreaseKeyWhenAllNodesAreRoots() {
 void decreaseKeyOfRoot() {
     HollowHeap<int> f1;
 
-    Item<int>* nodeToDecrease;
+    shared_ptr<Item<int>> nodeToDecrease;
     for (int i = 0; i < 17; i++) {
-        Item<int>* n = f1.insert(i);
+        shared_ptr<Item<int>> n = f1.insert(i);
 
         if (i == 1) {
             nodeToDecrease = n;
@@ -179,7 +179,7 @@ void decreaseKeyOfRoot() {
 
 void decreaseKeyOfMinNode() {
     HollowHeap<int> f1;
-    Item<int>* n = f1.insert(1);
+    shared_ptr<Item<int>> n = f1.insert(1);
     f1.insert(2);
     f1.insert(3);
     f1.insert(4);
@@ -193,9 +193,9 @@ void decreaseKeyOfMinNode() {
 void decreaseKeyOfLeaf() {
     HollowHeap<int> f1;
 
-    Item<int>* nodeToDecrease;
+    shared_ptr<Item<int>> nodeToDecrease;
     for (int i = 0; i < 17; i++) {
-        Item<int>* n = f1.insert(i);
+        shared_ptr<Item<int>> n = f1.insert(i);
 
         if (i == 12) {
             nodeToDecrease = n;
@@ -209,13 +209,13 @@ void decreaseKeyOfLeaf() {
     assert(f1.extractMin() == 0);
 }
 
-void decreaseKeyOfMinNodeWithMarkedParent() {
+void decreaseKeyOfNodeWithMarkedParent() {
     HollowHeap<int> f1;
 
-    Item<int>* nodeToDecrease1;
-    Item<int>* nodeToDecrease2;
+    shared_ptr<Item<int>> nodeToDecrease1;
+    shared_ptr<Item<int>> nodeToDecrease2;
     for (int i = 0; i < 17; i++) {
-        Item<int>* n = f1.insert(i);
+        shared_ptr<Item<int>> n = f1.insert(i);
 
         if (i == 14) {
             nodeToDecrease1 = n;
@@ -236,11 +236,11 @@ void decreaseKeyOfMinNodeWithMarkedParent() {
 void decreaseKeyOfMinNodeWithAllAncestorsMarked() {
     HollowHeap<int> f1;
 
-    Item<int>* nodeToDecrease1;
-    Item<int>* nodeToDecrease2;
-    Item<int>* nodeToDecrease3;
+    shared_ptr<Item<int>> nodeToDecrease1;
+    shared_ptr<Item<int>> nodeToDecrease2;
+    shared_ptr<Item<int>> nodeToDecrease3;
     for (int i = 0; i < 17; i++) {
-        Item<int>* n = f1.insert(i);
+        shared_ptr<Item<int>> n = f1.insert(i);
 
         if (i == 10) {
             nodeToDecrease1 = n;
@@ -266,7 +266,7 @@ void decreaseKeyOfMinNodeWithAllAncestorsMarked() {
 // delete node
 void deleteRoot() {
     HollowHeap<int> f1;
-    Item<int>* root = f1.insert(2);
+    shared_ptr<Item<int>> root = f1.insert(2);
     f1.insert(6);
     f1.insert(1);
 
@@ -279,7 +279,7 @@ void deleteCurrentMin() {
     HollowHeap<int> f1;
     f1.insert(2);
     f1.insert(6);
-    Item<int>* currMin = f1.insert(1);
+    shared_ptr<Item<int>> currMin = f1.insert(1);
 
     f1.deleteItem(currMin);
 
@@ -292,7 +292,7 @@ void deleteItemInTheMiddle() {
     f1.insert(2);
     f1.insert(3);
     f1.insert(4);
-    Item<int>* midNode = f1.insert(5);
+    shared_ptr<Item<int>> midNode = f1.insert(5);
     f1.insert(6);
     f1.extractMin();
     f1.deleteItem(midNode);
@@ -308,7 +308,7 @@ void deleteLeaf() {
     f1.insert(3);
     f1.insert(4);
     f1.insert(5);
-    Item<int>* child = f1.insert(6);
+    shared_ptr<Item<int>> child = f1.insert(6);
     f1.extractMin();
     f1.deleteItem(child);
 
@@ -319,7 +319,7 @@ void deleteLeaf() {
 // general tests
 void basicTest1() {
     HollowHeap<int> fib;
-    Item<int>* five = fib.insert(5);
+    shared_ptr<Item<int>> five = fib.insert(5);
     assert(fib.size() == 1);
     fib.insert(8);
     assert(fib.size() == 2);
@@ -352,7 +352,7 @@ void basicTest1() {
 // general tests
 void charTest1() {
     HollowHeap<char> fib;
-    Item<char>* eNode = fib.insert('e');
+    shared_ptr<Item<char>> eNode = fib.insert('e');
     fib.insert('f');
     fib.insert('e');
 
@@ -388,7 +388,7 @@ void basicTest2() {
     extractedMin = fib.extractMin();
     assert(extractedMin == 3);
     fib.insert(2);
-    Item<int>* ninety = fib.insert(90);
+    shared_ptr<Item<int>> ninety = fib.insert(90);
     extractedMin = fib.extractMin();
     assert(extractedMin == 2);
     extractedMin = fib.extractMin();
@@ -396,9 +396,9 @@ void basicTest2() {
     extractedMin =  fib.extractMin();
     assert(extractedMin == 5);
 
-    Item<int>* first28;
+    shared_ptr<Item<int>> first28;
     for(int i=0;i<20;i+=2) {
-        Item<int>* n = fib.insert(30-i);
+        shared_ptr<Item<int>> n = fib.insert(30-i);
 
         if (30 - i == 28) {
             first28 = n;
@@ -408,15 +408,15 @@ void basicTest2() {
         extractedMin = fib.extractMin();
     }
 
-    Item<int>* second28;
+    shared_ptr<Item<int>> second28;
     for(int i=0;i<20;i+=2) {
-        Item<int>* n = fib.insert(30-i);
+        shared_ptr<Item<int>> n = fib.insert(30-i);
 
         if (30 - i == 28) {
             second28 = n;
         }
     }
-    Item<int>* last23 = fib.insert(23);
+    shared_ptr<Item<int>> last23 = fib.insert(23);
     for(int i=0;i<7;i++) {
         extractedMin = fib.extractMin();
     }
@@ -435,6 +435,36 @@ void basicTest2() {
     assert(extractedMin == 24);
 }
 
+void basicTest3() {
+    HollowHeap<int> fib;
+    fib.insert(14);
+    fib.insert(11);
+    shared_ptr<Item<int>> five = fib.insert(5);
+    fib.insert(9);
+    fib.insert(0);
+    shared_ptr<Item<int>> eight = fib.insert(8);
+    fib.insert(10);
+    shared_ptr<Item<int>> three = fib.insert(3);
+    fib.insert(6);
+    fib.insert(12);
+    fib.insert(13);
+    fib.insert(4);
+
+    assert(fib.size() == 12);
+
+    assert(fib.extractMin() == 0);
+    assert(fib.size() == 11);
+    fib.decreaseKey(five, 1);
+    fib.decreaseKey(three, 2);
+    fib.decreaseKey(eight, 7);
+
+    assert(fib.extractMin() == 1);
+    assert(fib.size() == 10);
+    assert(fib.extractMin() == 2);
+
+    assert(fib.size() == 9);
+}
+
 void charTest2() {
     HollowHeap<char> fib;
     fib.insert('b');
@@ -447,7 +477,7 @@ void charTest2() {
     fib.insert('g');
     extractedMin = fib.extractMin();
     fib.insert('b');
-    Item<char>* zNode = fib.insert('z');
+    shared_ptr<Item<char>> zNode = fib.insert('z');
     extractedMin = fib.extractMin();
     extractedMin = fib.extractMin();
     extractedMin =  fib.extractMin();
@@ -460,11 +490,11 @@ void charTest2() {
     fib.insert('b');
     fib.insert('c');
     fib.insert('a');
-    Item<char>* aNode = fib.insert('d');
+    shared_ptr<Item<char>> aNode = fib.insert('d');
     fib.insert('b');
     fib.insert('c');
     fib.insert('a');
-    Item<char>* anotherNode = fib.insert('d');
+    shared_ptr<Item<char>> anotherNode = fib.insert('d');
     fib.insert('b');
     fib.insert('c');
     fib.insert('a');
@@ -483,6 +513,7 @@ void charTest2() {
 void runTests() {
     basicTest1();
     basicTest2();
+    basicTest3();
 
     charTest1();
     charTest2();
@@ -508,7 +539,7 @@ void runTests() {
     decreaseKeyOfRoot();
     decreaseKeyOfLeaf();
     decreaseKeyOfMinNode();
-    decreaseKeyOfMinNodeWithMarkedParent();
+    decreaseKeyOfNodeWithMarkedParent();
     decreaseKeyOfMinNodeWithAllAncestorsMarked();
 
     deleteCurrentMin();
