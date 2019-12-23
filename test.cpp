@@ -1,3 +1,4 @@
+#include <cassert>
 #include "hollow_heap.cpp"
 
 // insert
