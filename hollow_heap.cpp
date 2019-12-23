@@ -308,7 +308,7 @@ shared_ptr<Node<T>> HollowHeap<T>::merge(shared_ptr<Node<T>> &newNode) {
 
 template <typename T>
 shared_ptr<Node<T>> HollowHeap<T>::makeNode(shared_ptr<Item<T>> &item) {
-    shared_ptr<Node<T>> myNode(new Node(item));
+    shared_ptr<Node<T>> myNode(new Node<T>(item));
     item->node = myNode->shared_from_this();
     return myNode;
 }
